@@ -1,3 +1,4 @@
 huggingface
 output/
 output_*
+.venv/
