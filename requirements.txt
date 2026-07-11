@@ -1,0 +1,5 @@
+datasets==5.0.0
+diffusers==0.35.2
+rich==15.0.0
+transformers==5.12.1
+torch==2.12.1
