@@ -1,6 +1,18 @@
+import os
+import sys
+
+# Self-exec with LD_PRELOAD to prevent C++ ABI segmentation fault in llama-cpp-python
+if "LD_PRELOAD" not in os.environ or "libstdc++.so.6" not in os.environ["LD_PRELOAD"]:
+    os.environ["LD_PRELOAD"] = "/usr/lib/libstdc++.so.6"
+    try:
+        os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
+    except Exception as e:
+        print(f"Warning: Failed to self-exec with LD_PRELOAD: {e}", file=sys.stderr)
+
 from llama_cpp import Llama
 
 MODEL_PATH = "models/q6_k.gguf"
+
 
 print("Loading model...")
 

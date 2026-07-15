@@ -1,4 +1,14 @@
 from llama_cpp import Llama
+import os
+import sys
+
+if "LD_PRELOAD" not in os.environ or "libstdc++.so.6" not in os.environ["LD_PRELOAD"]:
+    os.environ["LD_PRELOAD"] = "/usr/lib/libstdc++.so.6"
+    try:
+        os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
+    except Exception as e:
+        print(f"Warning: Failed to self-exec with LD_PRELOAD: {e}", file=sys.stderr)
+
 
 MODEL_PATH = "models/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
 
