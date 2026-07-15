@@ -2,14 +2,27 @@ import time
 import threading
 import queue
 import sys
+import os
 import matplotlib.pyplot as plt
+from rich.console import Console
+
+console = Console()
+
+# Self-exec with LD_PRELOAD to prevent C++ ABI segmentation fault in llama-cpp-python
+if "LD_PRELOAD" not in os.environ or "libstdc++.so.6" not in os.environ["LD_PRELOAD"]:
+    os.environ["LD_PRELOAD"] = "/usr/lib/libstdc++.so.6"
+    try:
+        os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
+    except Exception as e:
+        console.print(f"[bold yellow]Warning: Failed to self-exec with LD_PRELOAD: {e}[/bold yellow]", style="red")
+
 from llama_cpp import Llama
 
 # Choose the model you are using
 MODEL_PATH = "models/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
 
 def load_model():
-    print("Loading model for realtime graph (this might take a moment)...")
+    console.print("[bold blue]Loading model for realtime graph (this might take a moment)...[/bold blue]")
     llm = Llama(
         model_path=MODEL_PATH,
         n_ctx=4096,
@@ -18,12 +31,12 @@ def load_model():
         n_gpu_layers=0,   # CPU only
         verbose=False,
     )
-    print("Model loaded.")
+    console.print("[bold green]Model loaded.[/bold green]")
     return llm
 
 def inference_thread(llm, update_queue):
     SYSTEM_PROMPT = "You are Qwen2.5-Coder, a helpful AI programming assistant."
-    print("Type 'exit' to quit.\n")
+    console.print("Type 'exit' to quit.\n")
     
     while True:
         try:
@@ -38,7 +51,7 @@ def inference_thread(llm, update_queue):
                 {"role": "user", "content": user},
             ]
 
-            print("\nAssistant: ", end="", flush=True)
+            console.print("\n[bold cyan]Assistant: [/bold cyan]", end="", flush=True)
             
             start_time = time.time()
             token_count = 0
@@ -68,16 +81,22 @@ def inference_thread(llm, update_queue):
                         # Send the new data point to the GUI thread
                         update_queue.put(("UPDATE", elapsed, speed))
 
-            print("\n")
+            elapsed = time.time() - start_time
+            speed = token_count / elapsed if elapsed > 0 else 0
+            console.print(
+                f"\n[dim yellow]Response time: {elapsed:.2f}s | "
+                f"Tokens generated: {token_count} | "
+                f"Speed: {speed:.2f} tok/s[/dim yellow]\n"
+            )
         except Exception as e:
-            print(f"\nError in inference thread: {e}")
+            console.print(f"\n[bold red]Error in inference thread: {e}[/bold red]")
             break
 
 if __name__ == "__main__":
     try:
         llm = load_model()
     except Exception as e:
-        print(f"Failed to load model from {MODEL_PATH}. Error: {e}")
+        console.print(f"[bold red]Failed to load model from {MODEL_PATH}. Error: {e}[/bold red]")
         sys.exit(1)
         
     update_queue = queue.Queue()

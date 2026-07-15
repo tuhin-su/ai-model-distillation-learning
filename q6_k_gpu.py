@@ -15,16 +15,16 @@ if "LD_PRELOAD" not in os.environ or "libstdc++.so.6" not in os.environ["LD_PREL
 
 from llama_cpp import Llama
 
-MODEL_PATH = "models/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
+MODEL_PATH = "models/q6_k.gguf"
 
-console.print("[bold blue]Loading model...[/bold blue]")
+console.print("[bold blue]Loading model on GPU...[/bold blue]")
 
 llm = Llama(
     model_path=MODEL_PATH,
     n_ctx=4096,
-    n_threads=8,      # Change according to your CPU
+    n_threads=8,      # Change according to your CPU/GPU setup
     n_batch=512,
-    n_gpu_layers=0,   # CPU only
+    n_gpu_layers=-1,  # Offload all layers to GPU
     verbose=False,
 )
 

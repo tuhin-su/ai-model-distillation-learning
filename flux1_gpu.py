@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-flux1_cpu.py
+flux1_gpu.py
 ------------
-Generates an image using the quantized FLUX.1-schnell GGUF model on CPU.
+Generates an image using the quantized FLUX.1-schnell GGUF model on GPU (CUDA).
 This script uses the Hugging Face diffusers library to load the GGUF transformer
-and other components, runs the inference on CPU, and displays the image.
+and other components, runs the inference on GPU, and displays the image.
 """
 
 import os
@@ -34,7 +34,7 @@ if not os.path.exists(MODEL_PATH):
 
 def main():
     # 1. Ask user for prompt
-    console.print("\n[bold cyan]================ FLUX.1 Schnell CPU Generator ================[/bold cyan]")
+    console.print("\n[bold cyan]================ FLUX.1 Schnell GPU Generator ================[/bold cyan]")
     prompt = input("Enter prompt: ").strip()
     if not prompt:
         prompt = "A majestic dragon sitting on top of a mountain peak, photorealistic"
@@ -43,11 +43,11 @@ def main():
     console.print("\n[bold]1. Loading quantized transformer from GGUF...[/bold]")
     console.print(f"   Source: {MODEL_PATH}")
     
-    # Load transformer with float32 computation on CPU
+    # Load transformer with bfloat16 computation on GPU
     transformer = FluxTransformer2DModel.from_single_file(
         MODEL_PATH,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float32),
-        torch_dtype=torch.float32,
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+        torch_dtype=torch.bfloat16,
     )
     console.print("   [green][✓] Transformer loaded successfully.[/green]")
 
@@ -56,15 +56,15 @@ def main():
     pipe = FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-schnell",
         transformer=transformer,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.bfloat16,
     )
     
-    # Ensure it's on CPU
-    pipe.to("cpu")
-    console.print("   [green][✓] Pipeline initialized on CPU.[/green]")
+    # Ensure it's on GPU (CUDA)
+    pipe.to("cuda")
+    console.print("   [green][✓] Pipeline initialized on GPU (CUDA).[/green]")
 
     # 3. Generate image
-    console.print("\n[bold]3. Generating image (this will take several minutes on CPU)...[/bold]")
+    console.print("\n[bold]3. Generating image on GPU...[/bold]")
     console.print("   Running 4 inference steps (FLUX Schnell default)...")
     
     start_time = time.perf_counter()
@@ -74,7 +74,7 @@ def main():
             guidance_scale=0.0,           # Required for Schnell
             num_inference_steps=4,         # Required for Schnell (usually 4 steps)
             max_sequence_length=256,
-            generator=torch.Generator("cpu").manual_seed(42),
+            generator=torch.Generator("cuda").manual_seed(42),
         )
     elapsed_time = time.perf_counter() - start_time
         
