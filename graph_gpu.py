@@ -28,7 +28,7 @@ def load_model():
         n_ctx=4096,
         n_threads=8,      # Change according to your CPU/GPU setup
         n_batch=512,
-        n_gpu_layers=-1,  # Offload all layers to GPU
+        n_gpu_layers=24,  # Partially offload layers to fit in VRAM (prevent out of memory)
         verbose=False,
     )
     console.print("[bold green]Model loaded.[/bold green]")
